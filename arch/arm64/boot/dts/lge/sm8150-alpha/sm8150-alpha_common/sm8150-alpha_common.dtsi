@@ -1,4 +1,3 @@
-
 &soc {
         lge,prmd {
                 compatible = "lge,prm";
@@ -6,9 +5,7 @@
                 lge,sben-enabled;
                 lge,fbcn-enabled;
         };
-};
 
-&soc {
 	wdog: qcom,wdt@17c10000 {
 		qcom,bark-time = <16000>;
 	};
