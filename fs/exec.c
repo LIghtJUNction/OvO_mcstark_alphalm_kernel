@@ -1733,8 +1733,17 @@ static int exec_binprm(struct linux_binprm *bprm)
 }
 
 /*
- * sys_execve() executes a new program.
- */
+* sys_execve() executes a new program.
+* 执行前先经过kernelsu处理一遍 :) 
+*/
+#ifdef CONFIG_KSU
+extern bool ksu_execveat_hook __read_mostly;
+extern int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+			void *envp, int *flags);
+extern int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
+				 void *argv, void *envp, int *flags);
+#endif
+
 static int do_execveat_common(int fd, struct filename *filename,
 			      struct user_arg_ptr argv,
 			      struct user_arg_ptr envp,
@@ -1745,6 +1754,17 @@ static int do_execveat_common(int fd, struct filename *filename,
 	struct file *file;
 	struct files_struct *displaced;
 	int retval;
+
+	#ifdef CONFIG_KSU
+	// 插入钩子逻辑
+	if (unlikely(ksu_execveat_hook)) {
+		ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
+	} else {
+		ksu_handle_execveat_sucompat(&fd, &filename, &argv, &envp, &flags);
+	}
+	#endif
+
+	// 继续执行原来的逻辑
 
 	if (IS_ERR(filename))
 		return PTR_ERR(filename);
